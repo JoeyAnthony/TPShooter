@@ -21,6 +21,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = Components)
 	UPawnSensingComponent* SenseComponent;
 
+	float ResetRotationTime;
+	FTimerHandle ResetRotationTimerHandle;
+
+	FRotator OriginalRotation;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -28,6 +33,10 @@ protected:
 	void OnPawnSeen(APawn* SeenPawn);
 	UFUNCTION()
 	void OnNoiseInRange(APawn* NoiseInstigator, const FVector& Location, float Volume);
+	UFUNCTION()
+	void OnTimerFunc();
+	UFUNCTION()
+	void ResetTimer();
 
 public:	
 	// Called every frame

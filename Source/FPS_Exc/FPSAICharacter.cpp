@@ -5,9 +5,10 @@
 #include "Perception/PawnSensingComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "TimerManager.h"
 
 // Sets default values
-AFPSAICharacter::AFPSAICharacter()
+AFPSAICharacter::AFPSAICharacter() : ResetRotationTime(4.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -19,6 +20,7 @@ AFPSAICharacter::AFPSAICharacter()
 void AFPSAICharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	OriginalRotation = GetActorRotation();
 
 	SenseComponent->OnSeePawn.AddDynamic(this, &AFPSAICharacter::OnPawnSeen);
 	SenseComponent->OnHearNoise.AddDynamic(this, &AFPSAICharacter::OnNoiseInRange);
@@ -30,10 +32,14 @@ void AFPSAICharacter::OnPawnSeen(APawn* SeenPawn)
 		return;
 	DrawDebugLine(GetWorld(), GetActorLocation(), SeenPawn->GetActorLocation(), FColor::Yellow, false, 10.f, (uint8)'\000', 2.f);
 
+	//direction vector
 	FVector Dir = SeenPawn->GetActorLocation() - GetActorLocation();
 	Dir.Normalize();
-
+	//rotate towards
 	FRotator NewLookAt = FRotator(0.f, FRotationMatrix::MakeFromX(Dir).Rotator().Yaw, 0.f);
+	SetActorRotation(NewLookAt);
+
+	ResetTimer();
 	
 	return;
 }
@@ -41,6 +47,25 @@ void AFPSAICharacter::OnPawnSeen(APawn* SeenPawn)
 void AFPSAICharacter::OnNoiseInRange(APawn* NoiseInstigator, const FVector& Location, float Volume)
 {
 	DrawDebugLine(GetWorld(), GetActorLocation(), Location, FColor::Red, false, 10.f, (uint8)'\000', 2.f);
+
+	//direction vector
+	FVector Dir = Location - GetActorLocation();
+	Dir.Normalize();
+	//rotate towards
+	FRotator NewLookAt = FRotator(0.f, FRotationMatrix::MakeFromX(Dir).Rotator().Yaw, 0.f);
+	SetActorRotation(NewLookAt);
+
+	ResetTimer();
+}
+
+void AFPSAICharacter::OnTimerFunc()
+{
+	SetActorRotation(OriginalRotation);
+}
+
+void AFPSAICharacter::ResetTimer()
+{
+	GetWorldTimerManager().SetTimer(ResetRotationTimerHandle, this, &AFPSAICharacter::OnTimerFunc, ResetRotationTime);
 }
 
 // Called every frame
